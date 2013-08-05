@@ -1,0 +1,30 @@
+﻿.h-sliderA .dsFollowSlide-navi a{
+	border:none;
+	background:url(../images/H-main/bc_h-slider-button.png) no-repeat 0 0 transparent;
+  width:22px;
+  height:22px;
+	_background:none ;
+	_filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled=true, sizingMethod=crop, src='../images/H-main/bc_h-slider-button.png');
+}
+
+.h-sliderA .dsFollowSlide-navi .current a{
+	background:url(../images/H-main/bc_h-slider-button_active.png) no-repeat 0 0 transparent;
+	width:22px\9;
+ 	_background:none;
+	_filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled=true, sizingMethod=crop, src='../images/H-main/bc_h-slider-button_active.png');
+}
+
+.h-notice-tie i{
+  width:6px;
+  height:6px;
+  overflow:hidden;
+	top: -1px;
+}
+.h-notice-tie-1st i{
+  background:url("slice/page-main/bc_h-notice-tie-l.gif") no-repeat scroll 0 0 transparent \9;
+	left: -1px \9;
+}
+.h-notice-tie-last i{
+  background:url("slice/page-main/bc_h-notice-tie-r.gif") no-repeat scroll 0 0 transparent \9;
+  right:-1px \9;
+}

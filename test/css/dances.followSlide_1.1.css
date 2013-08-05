@@ -1,0 +1,26 @@
+.dsFollowSlide{
+	position: relative;
+}
+
+.dsFollowSlide-view{
+	position: relative;
+	overflow: hidden;
+}
+
+.dsFollowSlide-con{
+	position: absolute;
+}
+
+/*--- 主体*/
+.dsFollowSlide-con li{
+	/*background: url("../img/loading.gif") no-repeat scroll center center transparent;*/
+	margin: 0;
+	padding: 0;
+	display: inline;
+	float: left;
+	_position: relative;
+}
+.dsFollowSlide-navi li a{
+	text-decoration: none;
+}
+

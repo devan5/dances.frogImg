@@ -1,13 +1,11 @@
 /**
  * @author devan5 <devan5.pan#gmail.com>
+ * @overview dances 插件, 支持惰性加载图片
  *
  * @require jquery-1.10.2.min.js
- * @require dances.javascript
- * @require dances.dom
- * @require dances.offset
- * @require dances.css
  *
- * @overview dances 插件, 支持惰性加载图片
+ * @firstDate 2013.08.
+ * @lastDate 2013.08.06
  *
  */
 
@@ -71,15 +69,6 @@
 			    }
 
 		    },
-
-	    uid = (function(){
-		    var i = 0;
-		    return function(){
-			    return i++;
-		    }
-	    })(),
-
-	    offset,
 
 	    $ = window.jQuery
     ;
@@ -187,7 +176,7 @@
             time
         ;
 
-        nDelay = "number" === typeof nDelay && nDelay === nDelay ? nDelay : 40;
+        nDelay = "number" === typeof nDelay && nDelay === nDelay ? nDelay : 25;
 
         return function(){
             clearTimeout(promise);
@@ -205,67 +194,6 @@
         }
     };
 
-	// offset
-
-	offset = function(elemOffset, elemScope){
-
-		var
-			nTop,
-			nLeft,
-			commonOffsetParent,
-			_nTop,
-			_nLeft,
-
-			$parent,
-			oOffset
-		;
-
-		if(!elemOffset || !elemScope || !$.contains(elemScope, elemOffset)){
-			return {};
-		}
-
-		nTop = 0;
-		nLeft = 0;
-		commonOffsetParent = elemScope.offsetParent;
-		_nTop = elemScope.offsetTop;
-		_nLeft = elemScope.offsetLeft;
-
-		if("none" === $(elemOffset).css("display")){
-			elemOffset = elemOffset.parentNode;
-			$parent = $(elemOffset);
-
-			// jquery 1.9 add
-			oOffset = $parent.css([
-				"paddingTop",
-				"borderTopWidth",
-				"paddingLeft",
-				"borderLeftWidth"
-			]);
-
-			nTop += parseInt(oOffset.paddingTop || 0);
-			nTop += parseInt(oOffset.borderTopWidth || 0);
-
-			nLeft += parseInt(oOffset.paddingLeft || 0);
-			nLeft += parseInt(oOffset.borderLeftWidth || 0);
-		}
-
-		while(elemOffset !== commonOffsetParent){
-			nTop += elemOffset.offsetTop;
-			nLeft += elemOffset.offsetLeft;
-			elemOffset = elemOffset.offsetParent;
-		}
-
-		// gc
-		elemOffset = elemScope =  commonOffsetParent = null;
-
-		return {
-			left: nLeft - _nLeft,
-			top : nTop - _nTop
-		};
-
-	};
-
-
 	Frog = Model
         .create({
             _construct: function(){
@@ -274,7 +202,7 @@
                     opts = args.pop()
                 ;
 
-                this._uid = uid();
+                this._uid = Frog.uid();
 
                 if("[object Object]" !== toString(opts)){
 	                // in case that, only one argument as element's selector
@@ -290,6 +218,7 @@
 
 	                // 预加载 距离
 	                px       : 55,
+	                footerPX : 150,
 	                attrUrl  : "_src",
 	                include  : ["img"],
 	                exclude  : [""],
@@ -304,16 +233,14 @@
 
                 // ensure [options.px] [options.sensitive] 数值准确性
                 opts.px = ("number" === typeof opts.px && opts.px === opts.px) ? opts.px : 0;
+	            opts.footerPX = ("number" === typeof opts.footerPX && opts.footerPX === opts.footerPX) ? opts.footerPX : 0;
                 opts.sensitive = ("number" === typeof opts.sensitive && opts.sensitive > 0) ? opts.sensitive : 0;
 
 	            // expect scopeElement or not
-	            this.$rootElem = "string" === typeof args[0] ?
-		            $(args[0])[0] :
+	            this.rootElem = "string" === typeof args[0] ?
+		            $(args[0])[0]:
 		            ""
 	            ;
-	            if(this.$rootElem && 0 === this.$rootElem.length){
-		            this.$rootElem = "";
-	            }
 
 	            // size images & cal them
 	            if(false === this.refresh()){
@@ -334,12 +261,12 @@
 		    refresh: function(){
 			    var
 				    opts = this.opts,
-				    $rootElem = this.$rootElem,
+				    rootElem = this.rootElem,
 				    $imgs = $()
 			    ;
 
 			    $.each(opts.include, function(){
-				    $imgs = $imgs.add(this + "", $rootElem || opts.win.document);
+				    $imgs = $imgs.add(this + "", rootElem || opts.win.document);
 			    });
 
 			    if(opts.exclude && opts.exclude.length > 0){
@@ -361,16 +288,21 @@
 		    },
 
 		    // 获取子元素们高度
-		    cal    : function(){
+			cal: function(){
 			    var
 				    arrImgAio = [],
 				    base = this.$imgs,
 				    len = base.length,
-				    scopeEl = this.scopeEl
+				    scopeEl
+			    ;
+
+			    scopeEl = this.rootElem ?
+				    this.rootElem :
+				    this.opts.win.document.documentElement
 			    ;
 
 			    while(len--){
-                    arrImgAio.push([base[len], offset(base[len], scopeEl).top]);
+                    arrImgAio.push([base[len], Frog.offset(base[len], scopeEl).top]);
 			    }
 
 			    this.arrImgAio && (this.arrImgAio.length = 0);
@@ -393,18 +325,20 @@
                 var
                     _this = this,
 
-	                $rootElem = _this.$rootElem,
+	                rootElem = _this.rootElem,
 
 	                opts = _this.opts
 
                 ;
 
 	            if(!_this.__binded){
-
-		            if($rootElem){
-			            $rootElem.bind("scroll.frogImg" + _this._uid, throttle(function(){
+		            if(rootElem){
+			            $(rootElem).bind("scroll.frogImg" + _this._uid, throttle(function(){
+				            console.log(5);
 				            _this.response();
 			            }, opts.sensitive));
+
+			            // TODO bind click for resize element
 
 		            }else{
 			            Frog.bindWin(_this);
@@ -419,13 +353,13 @@
 	            var
 		            _this = this,
 
-		            $rootElem = _this.$rootElem
+		            rootElem = _this.rootElem
 	            ;
 
 	            if(_this.__binded){
 
-		            if($rootElem){
-			            $rootElem.unbind("scroll.frogImg" + _this._uid);
+		            if(rootElem){
+			            $(rootElem).unbind("scroll.frogImg" + _this._uid);
 		            }else{
 			            Frog.unbindWin(_this);
 		            }
@@ -444,66 +378,73 @@
 	                nCurrentScrollTop ,
 
 	                item,
-                    itemEl,
+                    elemItem,
                     itemSrc,
 
 	                opts,
 
-				    src,
-				    px,
+				    sAttrUrl,
+				    nOffsetY,
 
 	                viewHeight,
 	                pageHeight,
-	                win,
 
-	                bFoot,
+	                bFoot
 
-                    _this = this
                 ;
 
                 if(len < 1){
-                    _this.unbind();
+                    this.unbind();
                     return ;
                 }
-	            $log(5);
 
-                nCurrentScrollTop = undefined === window.pageYOffset ?
-	                Math.max(document.body.scrollTop, document.documentElement.scrollTop):
-	                window.pageYOffset
-	            ;
 
-	            opts = _this.opts;
+	            opts = this.opts;
 
-	            src = opts.src;
-	            px = opts.px;
+	            sAttrUrl = opts.src;
+	            nOffsetY = opts.px;
 
-	            win = opts.win;
-	            viewHeight = win.document.documentElement.clientHeight;
+	            if(this.rootElem){
+		            viewHeight = this.rootElem.clientHeight;
+		            pageHeight = this.rootElem.scrollHeight;
+		            nCurrentScrollTop = this.rootElem.scrollTop;
 
-	            pageHeight = _this.$rootElem ?
-		            _this.$rootElem.scrollHeight :
-		            win.document.documentElement.scrollHeight
-	            ;
+	            }else{
+		            viewHeight = opts.win.document.documentElement.clientHeight;
+		            pageHeight = opts.win.document.documentElement.scrollHeight;
+		            nCurrentScrollTop = undefined === window.pageYOffset ?
+			            Math.max(document.body.scrollTop, document.documentElement.scrollTop) :
+			            window.pageYOffset
+		            ;
+	            }
 
-	            bFoot = (nCurrentScrollTop + viewHeight > pageHeight - 50);
+	            bFoot = (nCurrentScrollTop + viewHeight > pageHeight - opts.footerPX);
 
                 while(len--){
                     item = arrImgAio[len];
-                    itemEl = item[0];
+                    elemItem = item[0];
 
-                    if(!itemEl){
+                    if(!elemItem){
+	                    arrImgAio.splice(len, 1);
                         continue;
                     }
 
-                    if((nCurrentScrollTop + viewHeight + px > item[1]) && (nCurrentScrollTop - px <= item[1]) || bFoot){
-                        itemSrc = itemEl.getAttribute(src);
+                    if(
+                        // 从上往下
+	                    (nCurrentScrollTop + viewHeight + nOffsetY > item[1]) &&
+	                    // 从下往上
+	                    (nCurrentScrollTop - nOffsetY <= item[1]) ||
+
+                        bFoot
+	                    ){
+                        itemSrc = elemItem.getAttribute(sAttrUrl);
                         if(itemSrc){
-                            itemEl.setAttribute("src", itemSrc);
-                            itemEl.removeAttribute(src);
+                            elemItem.setAttribute("src", itemSrc);
+                            elemItem.removeAttribute(sAttrUrl);
                         }
 
-                        itemEl = item[0] = null;
-                        // remove
+                        elemItem = item[0] = null;
+
                         arrImgAio.splice(len, 1);
                     }
 
@@ -514,6 +455,12 @@
         })
 
 	    .extend({
+			_uid :0,
+
+			uid: function(){
+				return ++this._uid;
+			},
+
 		    arrWin   : [],
 
 		    getWinInfo: function(win, bDel){
@@ -537,14 +484,18 @@
 
 		    bindWin: function(inst){
 			    var
-				    win = inst.opts.win,
+				    opts = inst.opts,
+				    win = opts.win,
 				    itemWin
 			    ;
 
 			    itemWin = this.getWinInfo(win);
 
+			    inst.responseAdapter = function(){
+				    inst.response();
+			    };
+
 			    if(itemWin){
-				    inst.responseAdapter = function(){ inst.response(); };
 				    itemWin.repo.push(inst.responseAdapter);
 
 			    }else{
@@ -554,18 +505,25 @@
 					    repo     : []
 				    };
 
-				    inst.responseAdapter = function(){
-					    inst.response();
-					    itemWin.viewHeight = win.document.documentElement.clientHeight;
-				    };
-
 				    itemWin.repo.push(inst.responseAdapter);
 
-				    $(win).bind("resize.frogImage", throttle(function(){
+				    $(win).bind("scroll.frogImage", throttle(function(){
 					    forEach(itemWin.repo, function(fn){
 						    fn();
 					    });
-				    }, 25));
+				    }, opts.sensitive));
+
+				    // TODO 测试一下 真实 ie8 情况
+				    $log(win === top);
+				    if(win === top){
+					    $(win).bind("resize.frogImage", throttle(function(){
+						    $log("re");
+						    forEach(itemWin.repo, function(fn){
+							    fn();
+						    });
+						    itemWin.viewHeight = win.document.documentElement.clientHeight;
+					    }, opts.sensitive));
+				    }
 
 				    this.arrWin.push(itemWin);
 			    }
@@ -596,10 +554,70 @@
 
 			    if(0 === itemWin.repo.length){
 			        this.getWinInfo(win, true);
-				    $(win).unbind("resize.frogImage");
+				    $(win).unbind("scroll.frogImage");
+				    win === top && $(win).unbind("resize.frogImage");
 			    }
 
-		    }
+		    },
+
+			// offset
+			offset: function(elemOffset, elemScope){
+
+				var
+					nTop,
+					nLeft,
+					commonOffsetParent,
+					_nTop,
+					_nLeft,
+
+					$parent,
+					oOffset
+				;
+
+				if(!elemOffset || !elemScope || !$.contains(elemScope, elemOffset)){
+					return {};
+				}
+
+				nTop = 0;
+				nLeft = 0;
+				commonOffsetParent = elemScope.offsetParent;
+				_nTop = elemScope.offsetTop;
+				_nLeft = elemScope.offsetLeft;
+
+				if("none" === $(elemOffset).css("display")){
+					elemOffset = elemOffset.parentNode;
+					$parent = $(elemOffset);
+
+					// jquery 1.9 add
+					oOffset = $parent.css([
+						"paddingTop",
+						"borderTopWidth",
+						"paddingLeft",
+						"borderLeftWidth"
+					]);
+
+					nTop += parseInt(oOffset.paddingTop || 0);
+					nTop += parseInt(oOffset.borderTopWidth || 0);
+
+					nLeft += parseInt(oOffset.paddingLeft || 0);
+					nLeft += parseInt(oOffset.borderLeftWidth || 0);
+				}
+
+				while(elemOffset !== commonOffsetParent){
+					nTop += elemOffset.offsetTop;
+					nLeft += elemOffset.offsetLeft;
+					elemOffset = elemOffset.offsetParent;
+				}
+
+				// gc
+				elemOffset = elemScope = commonOffsetParent = null;
+
+				return {
+					left: nLeft - _nLeft,
+					top : nTop - _nTop
+				};
+
+			}
 
 	    })
     ;
@@ -609,15 +627,8 @@
      * @param opts
      */
     frog = function(selector, opts){
-        var inst = Frog.init.apply(Frog, arguments);
+	    return Frog.init.apply(Frog, arguments);
     };
-
-	exports || (exports = (function(){
-		function Foo(){ }
-		Foo.prototype.root = "dances.javascript";
-		window.dances = new Foo();
-		return window.dances;
-	})());
 
     exports["frogImg"] = frog;
 
