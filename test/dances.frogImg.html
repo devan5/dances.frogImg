@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title></title>
+    <style type="text/css">
+        html,body{
+            height: 105%;
+        }
+    </style>
+    <script type="text/javascript" src="../../../dances.amd/dances.amd.js"></script>
+    <script type="text/javascript" src="../../../dances.path.js"></script>
+</head>
+<body>
+	<img src="" alt="" />
+
+    <script type="text/javascript">
+        define.amd = {
+            jquery  : true,
+            dancesFrogImg : true
+        };
+    </script>
+    <script type="text/javascript">
+        require.conf("baseUrl", "../../../")
+        ([
+            "jQ102",
+            "dancesFrogImg"
+        ], function($, _){
+
+            _(".div");
+
+        });
+    </script>
+
+</body>
+</html>
